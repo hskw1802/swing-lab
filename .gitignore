@@ -1,0 +1,10 @@
+node_modules/
+.env
+.env.*
+!.env.example
+.dev.vars*
+.wrangler/
+*.log
+.DS_Store
+.openai/execution-profile.json
+.openai/site-workflow*

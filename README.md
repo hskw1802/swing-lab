@@ -1,2 +1,81 @@
-# swing-lab
-Mobile-first golf swing analysis web app with a white Liquid Glass UI. Runs on Cloudflare; on-device pose estimation.
+# Swing Lab
+
+ゴルフ動画の姿勢を可視化する、モバイルファーストのWebアプリです。
+
+**アプリ:** https://swing-lab-hskw-20261021.luckyshrew5.chatgpt.site/?v=3
+
+## 機能
+
+- 白を基調としたLiquid Glass UI、半透明パネル、浮遊ナビゲーション
+- 全画面スケルトン、読み込み進捗、中止操作、失敗時の復帰
+- リップル、スイッチ、スクロール表示、パネル展開、結果表示のアニメーション
+- 動画の骨格・体軸・肩と骨盤のライン・肘と膝の角度・頭と手の軌跡
+- スロー再生、最初の検出姿勢との比較、解析画像の保存
+- JSON形式の解析データの保存・読込
+- 3分・500MB以内の、端末で再生できる動画
+
+## 起動
+
+Node.js 22以降が必要です。npmパッケージのインストールは不要です。
+
+```sh
+npm run dev
+```
+
+http://127.0.0.1:4173 を開きます。
+
+```sh
+npm run check
+npm test
+npm run build
+```
+
+静的配信ファイルは `dist/` に生成されます。Cloudflareに自分で配信する場合は、Cloudflareへログインしたうえで以下を実行できます。
+
+```sh
+npx wrangler@4 deploy
+```
+
+`wrangler.jsonc` はWorkers Static Assets向けです。この操作は利用者自身のCloudflareアカウントへ新しく配信します。現在の公開アプリはSitesが管理するCloudflare環境で配信しており、このGitHubリポジトリから本番への自動デプロイは未設定です。
+
+## 技術構成
+
+| 技術 | 採用理由 |
+| --- | --- |
+| HTML・JavaScript ES Modules | 既存の動作する動画解析を保ち、フレームワークの初期読込・ビルド依存を増やさずにモバイルで動かすため |
+| CSS・backdrop-filter | 半透明、背景ぼかし、ハイライト、内側の影で白いLiquid Glass表現を作るため |
+| CSS Animation・Web Animations API | 操作や状態変化を滑らかにし、外部アニメーションライブラリの負荷を避けるため |
+| IntersectionObserver | スクロール中の表示開始とナビゲーション状態を、常時スクロール監視をせず制御するため |
+| MediaPipe Pose Landmarker / WebAssembly | 体の座標を端末内で抽出し、元動画をサーバーへ送らないため |
+| HTMLVideoElement・requestVideoFrameCallback | 再生済みの映像から順に読み取り、iPhoneで問題になったフレームごとのseek完了待ちを避けるため |
+| Canvas 2D | 動画上の骨格・基準線・角度・軌跡を同じ座標系で描き、画像として保存するため |
+| JSON・Blob・File API | APIやユーザー登録なしで、解析結果を別端末へ持ち運ぶため |
+| Cloudflare / Sites | PC常時起動を不要にし、既存のURLとアクセス制御を維持して配信するため |
+| Node.js組込ツール・node:test | 外部ビルド依存なしで、開発サーバー・ビルド・回帰テストを再現するため |
+| GitHub Actions | ソース公開後も構文検査・テスト・ビルドを継続的に実行するため |
+| SVG・システムフォント・Web App Manifest | 画像やフォントの追加ダウンロードを減らし、解像度を問わず明瞭なUIとホーム画面向けの表示情報を用意するため |
+
+すべての選定理由、採用しなかった技術、データフローは [docs/architecture.md](docs/architecture.md) に記載しています。
+
+## 制限とデータの扱い
+
+- Workers AIは利用していません。ユーザーの方針変更に合わせ、従来の端末内姿勢推定と計測値に基づく参考コメントを維持しています。
+- 動画や姿勢データはサーバーにアップロードしません。MediaPipeのコード・WASM・モデルを配信元からダウンロードします。
+- 端末間の自動同期とクラウド履歴保存はありません。保存したJSONを別端末で読み込みます。JSONに元動画は含まれません。
+- 計測は2D推定で、荷重、実際の回転角、クラブ軌道は測れません。評価閾値は検証済みのゴルフ診断基準ではありません。
+- 低速再生で解析するため、動画の約2倍以上の時間がかかります。解析中は画面を開いたままにしてください。
+- iPhone幅のレイアウトをブラウザで検証しています。iPhone実機での確認とは異なります。
+- Web App Manifestはありますが、オフラインキャッシュ用のService Workerは追加していません。完全なオフライン動作は保証しません。
+
+## ソース
+
+```text
+src/                  配信するアプリのソース
+scripts/              開発サーバー・ビルド
+tests/                再生・中止・停止時の回帰テスト
+docs/architecture.md  技術選定と設計
+wrangler.jsonc        Cloudflareへの独立配信用設定
+.github/workflows/    検証用CI
+```
+
+MediaPipeはGoogleの提供するライブラリ・モデルを使います。外部コンポーネントのライセンス・利用条件はそれぞれの提供元に従います。このリポジトリの公開は、独自にオープンソースライセンスを付与するものではありません。
