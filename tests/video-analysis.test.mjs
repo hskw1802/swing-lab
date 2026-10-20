@@ -10,7 +10,7 @@ class FakeVideo extends EventTarget {
     if(!frameAPI)this.requestVideoFrameCallback=undefined;
   }
   get currentTime(){return this.t;}
-  set currentTime(t){this.t=t;this.index=0;this.ended=false;this.resets++;} // Intentionally emits NO seeked event.
+  set currentTime(t){this.t=t;this.index=Math.round(t*10);this.ended=false;this.resets++;} // Intentionally emits NO seeked event.
   play(){if(this.denied)return Promise.reject(Object.assign(new Error('blocked'),{name:'NotAllowedError'}));this.paused=false;this.tick();return Promise.resolve();}
   pause(){this.paused=true;clearTimeout(this.timer);}
   tick(){if(this.paused||this.stalled)return;this.timer=setTimeout(()=>{
@@ -57,4 +57,19 @@ test('hidden page stops analysis with a specific message',async()=>{
 });
 test('denied initial playback tells the user how to retry',async()=>{
   const video=new FakeVideo({denied:true});await assert.rejects(primeVideo(video),/「再生」/);assert.equal(video.paused,true);
+});
+
+test('selected range excludes leading and trailing time without changing sampling interval or speed',async()=>{
+  const video=new FakeVideo(),times=[],rates=[];
+  await analyzePlayback(video,{start:.3,end:.8,onFrame:t=>{times.push(t);rates.push(video.playbackRate)},isHidden:()=>false});
+  assert.ok(times.length>=5);assert.equal(times[0],.3);assert.equal(times.at(-1),.8);assert.ok(times.every(t=>t>=.3&&t<=.8));assert.ok(rates.every(r=>r===.5));
+});
+test('multiple ranges retain source timestamps and omit the gap',async()=>{
+  const video=new FakeVideo(),times=[];
+  await analyzePlayback(video,{start:0,end:.2,onFrame:t=>times.push(t),isHidden:()=>false});
+  await analyzePlayback(video,{start:.7,end:1,onFrame:t=>times.push(t),isHidden:()=>false});
+  assert.ok(times.includes(.7));assert.ok(times.every(t=>t<=.2||t>=.7));assert.ok(times.every((t,i)=>!i||t>times[i-1]));
+});
+test('invalid source ranges fail before playback',async()=>{
+  const video=new FakeVideo();await assert.rejects(analyzePlayback(video,{start:.8,end:.3,onFrame(){}}),/区間/);assert.equal(video.resets,0);
 });

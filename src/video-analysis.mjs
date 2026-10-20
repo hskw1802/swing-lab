@@ -18,8 +18,9 @@ export async function primeVideo(video, {timeoutMs=30000, cancelled=()=>false}={
   }
 }
 
-export function analyzePlayback(video, {onFrame,onProgress=()=>{},cancelled=()=>false,isHidden=()=>document.hidden,stallMs=30000,interval=1/12}={}) {
+export function analyzePlayback(video, {onFrame,onProgress=()=>{},cancelled=()=>false,isHidden=()=>document.hidden,stallMs=30000,interval=1/12,start=0,end=video.duration}={}) {
   return new Promise((resolve,reject)=>{
+    if(!Number.isFinite(start)||!Number.isFinite(end)||start<0||end>video.duration+.001||start>=end){reject(new Error('解析区間が不正です。'));return;}
     const oldRate=video.playbackRate;
     let frameId=null,poll,lastTime=-Infinity,lastProgress=Date.now(),done=false;
     const hasFrameCallback=typeof video.requestVideoFrameCallback==='function';
@@ -45,8 +46,9 @@ export function analyzePlayback(video, {onFrame,onProgress=()=>{},cancelled=()=>
       if(cancelled()){finish(new Error('解析を中止しました。'));return;}
       const t=metadata?.mediaTime??video.currentTime;
       // A seek can briefly expose an old frame. Wait for the reset to finish.
-      if(!video.seeking&&video.readyState>=2&&Number.isFinite(t)&&t>=0&&t<=video.duration&&t-lastTime>=interval-0.00001){
-        try{onFrame(t);lastTime=t;lastProgress=Date.now();onProgress(t/video.duration);}catch(error){finish(error);return;}
+      if(!video.seeking&&video.readyState>=2&&Number.isFinite(t)&&t>end+.001&&video.currentTime>=end-.02){onProgress(1);finish();return;}
+      if(!video.seeking&&video.readyState>=2&&Number.isFinite(t)&&t>=start-.00001&&t<=end+.001&&t-lastTime>=interval-0.00001){
+        try{onFrame(t);lastTime=t;lastProgress=Date.now();onProgress(Math.min(1,(t-start)/(end-start)));}catch(error){finish(error);return;}
       }
       if(video.ended){finish();return;}
       schedule();
@@ -60,7 +62,7 @@ export function analyzePlayback(video, {onFrame,onProgress=()=>{},cancelled=()=>
     },100);
     try {
       video.pause();
-      video.currentTime=0;
+      video.currentTime=start;
       video.playbackRate=0.5;
       schedule();
       Promise.resolve(video.play()).catch(error=>finish(error.name==='NotAllowedError'?new Error('再生が許可されませんでした。「再生」を一度押してから再度解析してください。'):error));
