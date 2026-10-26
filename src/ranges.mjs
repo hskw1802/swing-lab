@@ -4,7 +4,9 @@ export function normalizeRanges(ranges,duration){
     if(!Number.isFinite(range.start)||!Number.isFinite(range.end)||range.start<0||range.end>duration+.001||range.end-range.start<.5)throw new Error('開始・終了は動画内で指定し、区間を0.5秒以上にしてください。');
     const impact=range.impact??null;
     if(impact!==null&&(!Number.isFinite(impact)||impact<range.start||impact>range.end))throw new Error('インパクトは区間の開始・終了の間で指定してください。');
-    return {start:range.start,end:Math.min(range.end,duration),impact};
+    const address=range.address??null;
+    if(address!==null&&(!Number.isFinite(address)||address<range.start||address>range.end||(impact!==null&&address>=impact)))throw new Error('アドレスは区間内で、インパクトより前に指定してください。');
+    return {start:range.start,end:Math.min(range.end,duration),impact,address};
   }).sort((a,b)=>a.start-b.start);
   if(sorted.some((range,i)=>i&&range.start<sorted[i-1].end-.001))throw new Error('区間が重なっています。重ならない時間を指定してください。');
   return sorted;

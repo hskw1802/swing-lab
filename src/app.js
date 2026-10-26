@@ -1,10 +1,10 @@
-import {setLoading,loadingMessage,toast,resultReady} from './ui.mjs?v=4';
-import {primeVideo,analyzePlayback} from './video-analysis.mjs?v=4';
-import {createRangeEditor} from './range-editor.mjs?v=4';
-import {totalDuration,formatTime} from './ranges.mjs?v=4';
-import {measures,good,segmentStats,coachingHTML} from './coaching.mjs?v=4';
-import {renderOverlay} from './overlay.mjs?v=4';
-import {validateReport} from './report.mjs?v=4';
+import {setLoading,loadingMessage,toast,resultReady} from './ui.mjs?v=5';
+import {primeVideo,analyzePlayback} from './video-analysis.mjs?v=5';
+import {createRangeEditor} from './range-editor.mjs?v=5';
+import {totalDuration,formatTime} from './ranges.mjs?v=5';
+import {measures,good,segmentStats,coachingHTML} from './coaching.mjs?v=5';
+import {renderOverlay} from './overlay.mjs?v=5';
+import {validateReport} from './report.mjs?v=5';
 const $=s=>document.querySelector(s),video=$('#video'),canvas=$('#overlay'),ctx=canvas.getContext('2d');
 let report=null,url=null,engine=null,busy=false,stopped=false,imported=false,thickness=3,animationId=null,lastDraw=-Infinity;
 const poseCache=new Map(),layers={skeleton:true,axis:true,planes:true,angles:true,trail:true,ghost:false};
@@ -104,7 +104,7 @@ $('#analyze').onclick=async()=>{
 $('#export').onclick=()=>{if(report)download(new Blob([JSON.stringify(report)],{type:'application/json'}),'swing-lab-'+report.created.slice(0,10)+'.json');};
 $('#import').onchange=async()=>{
   const file=$('#import').files[0];if(!file||busy)return;
-  try{if(file.size>20*1024*1024)throw new Error('解析ファイルが大きすぎます。');const parsed=validateReport(JSON.parse(await file.text()));video.pause();video.removeAttribute('src');video.load();video.hidden=true;editor.hide();$('#stage').classList.add('has-video');$('#stage').style.setProperty('--video-ratio',parsed.width+'/'+parsed.height);report=parsed;imported=true;$('#empty').hidden=true;$('#seek').max=parsed.duration;$('#seek').value=parsed.frames[0].t;$('#play').disabled=true;$('#analyze').disabled=true;unlock();state('保存した解析を表示中です。元動画は含まれません。');}
+  try{if(file.size>20*1024*1024)throw new Error('解析ファイルが大きすぎます。');const parsed=validateReport(JSON.parse(await file.text()));video.pause();video.removeAttribute('src');video.load();video.hidden=true;editor.hide();$('#stage').classList.add('has-video');$('#stage').style.setProperty('--video-ratio',parsed.width+'/'+parsed.height);report=parsed;$('#view').value=parsed.view;$('#hand').value=parsed.hand;imported=true;$('#empty').hidden=true;$('#seek').max=parsed.duration;$('#seek').value=parsed.frames[0].t;$('#play').disabled=true;$('#analyze').disabled=true;unlock();state('保存した解析を表示中です。元動画は含まれません。');}
   catch(error){state(error.message||'有効なSwing Lab解析ファイルを選んでください。');}
 };
 $('#shot').onclick=()=>{if(!report)return;const output=document.createElement('canvas');output.width=report.width;output.height=report.height;const pixels=output.getContext('2d');pixels.fillStyle='#13202a';pixels.fillRect(0,0,output.width,output.height);if(!imported)pixels.drawImage(video,0,0,output.width,output.height);pixels.drawImage(canvas,0,0);output.toBlob(blob=>{if(blob)download(blob,'swing-lab-frame.png');});};

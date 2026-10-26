@@ -1,9 +1,10 @@
-import {mid,good,angle} from './coaching.mjs?v=4';
+import {mid,good,angle} from './coaching.mjs?v=5';
 export function renderOverlay(canvas,frame,report,segment,layers,thickness=3){
   const w=report.width,h=report.height;
   if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;}
   const ctx=canvas.getContext('2d');ctx.clearRect(0,0,w,h);ctx.lineCap='round';ctx.lineJoin='round';
-  const scale=Math.max(.001,Math.min((canvas.clientWidth||w)/w,(canvas.clientHeight||h)/h)),unit=1/scale,p=frame.p,reference=segment.frames[0]?.p??p;
+  const baseline=segment.segment.address==null?segment.frames[0]:segment.frames.reduce((a,b)=>!a||Math.abs(b.t-segment.segment.address)<Math.abs(a.t-segment.segment.address)?b:a,null);
+  const scale=Math.max(.001,Math.min((canvas.clientWidth||w)/w,(canvas.clientHeight||h)/h)),unit=1/scale,p=frame.p,reference=baseline?.p??p;
   function stroke(color,multiplier=1,dashed=false){
     ctx.setLineDash(dashed?[7*unit,6*unit]:[]);
     ctx.strokeStyle='#081b2da6';ctx.lineWidth=(thickness*multiplier+1.5)*unit;ctx.stroke();
