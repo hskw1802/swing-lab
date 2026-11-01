@@ -2,7 +2,7 @@
 
 ゴルフ動画の姿勢を可視化する、モバイルファーストのWebアプリです。
 
-**アプリ:** https://swing-lab-hskw-20261021.luckyshrew5.chatgpt.site/?v=6
+**アプリ:** https://swing-lab-hskw-20261021.hskw1802.chatgpt.site/?v=6
 
 ## 0.6の修正
 
