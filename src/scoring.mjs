@@ -1,11 +1,11 @@
-import {good,measures} from './coaching.mjs?v=5';
+import {good,measures} from './coaching.mjs?v=6';
 export const RUBRIC={version:'angle-control-1',tolerance:5,zeroAt:20,maxGap:.18,minCoverage:.8};
 const clamp=x=>Math.max(0,Math.min(1,x));
 // A transparent 2D posture-control heuristic, not a validated golf skill score.
 export function evaluateSwing(report,segment,frames){
   const unavailable=reason=>({score:null,reason});
   if(report.view!=='side')return unavailable('正面では前傾を測れません。後方からの動画で採点してください。肩の傾きや膝は回転に伴って変わるため、一定角度を良い姿勢として採点しません。');
-  if(segment.address==null||segment.impact==null)return unavailable('「構えをここに」と「打球をここに」を指定して再解析してください。各区間を1スイングにすると採点できます。');
+  if(segment.address==null||segment.impact==null)return unavailable('構え・打球の時刻が未指定です。「動画を見て採点時刻を設定」から2つの位置を指定してください。再解析は不要です。');
   const duration=segment.impact-segment.address;
   if(duration<.5||duration>5)return unavailable('構えは動き出す直前、打球は接触の瞬間を指定してください。評価する時間は0.5〜5秒です。');
   const rows=frames.filter(f=>good(f.p,[11,12,23,24])).map(f=>({t:f.t,axis:measures(f.p,report.width,report.height,report.hand).axis,p:f.p}));

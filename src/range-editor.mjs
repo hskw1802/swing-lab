@@ -1,4 +1,4 @@
-import {normalizeRanges,totalDuration,formatTime} from './ranges.mjs?v=5';
+import {normalizeRanges,totalDuration,formatTime} from './ranges.mjs?v=6';
 export function createRangeEditor(video,{onChange=()=>{},isBusy=()=>false}={}){
   const $=id=>document.getElementById(id),root=$('rangeEditor');
   let duration=0,registered=[],impact=null,address=null,editing=-1;
@@ -35,5 +35,5 @@ export function createRangeEditor(video,{onChange=()=>{},isBusy=()=>false}={}){
     if(isBusy()||video.paused||!$('previewOnly').checked)return;
     try{const ranges=getRanges(),t=video.currentTime;if(ranges.some(r=>t>=r.start-.001&&t<r.end))return;const next=ranges.find(r=>r.start>t);if(next)video.currentTime=next.start;else{video.pause();if(Math.abs(t-ranges.at(-1).end)>.05)video.currentTime=ranges.at(-1).end;}}catch{video.pause();}
   });
-  return {getRanges,hide(){root.hidden=true;},reset(value){duration=value;registered=[];impact=null;address=null;editing=-1;$('addRange').textContent='この区間を追加';$('rangeStart').value=0;$('rangeEnd').value=duration.toFixed(3);$('rangeStart').max=duration;$('rangeEnd').max=duration;$('previewOnly').checked=false;root.hidden=false;render();status();}};
+  return {getRanges,setPhases(index,phases){if(registered[index])registered[index]={...registered[index],...phases};if(editing===index||(!registered.length&&index===0)){address=phases.address??null;impact=phases.impact??null;}render();status();},hide(){root.hidden=true;},reset(value){duration=value;registered=[];impact=null;address=null;editing=-1;$('addRange').textContent='この区間を追加';$('rangeStart').value=0;$('rangeEnd').value=duration.toFixed(3);$('rangeStart').max=duration;$('rangeEnd').max=duration;$('previewOnly').checked=false;root.hidden=false;render();status();}};
 }

@@ -121,3 +121,12 @@ version 2の区間に任意のaddressを追加し、区間内・impactより前�
 - https://www.mytpi.com/improve-my-game/swing-characteristics/loss-of-posture
 - https://www.mytpi.com/improve-my-game/swing-characteristics/early-extension
 - https://pmc.ncbi.nlm.nih.gov/articles/PMC6243633/
+
+
+## 0.6：結果の表示と採点時刻の修正
+
+複数スイングで非常に縦長になるfeedback要素にIntersectionObserverのthreshold 0.08を適用すると、可視領域比率がその値に達せずopacity 0が継続しました。表示監視はthreshold 0に変更し、結果欄自体はCSSでも常時不透明にします。結果生成後は明示的に表示クラスを付与します。20スイング・約33,000pxの結果要素でopacity 1、60件の確認練習カード、ブラウザエラーなしを確認しています。
+
+点数未表示の別要因として、address/impact未指定、正面、計測不足などのスコア抑制がありました。これらは点数を捏造せず、先頭の状態一覧に理由と設定操作を出します。解析後にsetEvaluationPhaseで区間の局面メタデータだけをイミュータブルに更新し、保存済みの座標で集計・採点を更新します。version 1は区間を1つ持つversion 2へ移行します。version 2のframes配列は同じオブジェクトを維持します。入力はnormalizeRangesで区間内・構えより後の打球を検証します。新しい動画・結果の読込、再解析時は設定対象をリセットします。通常動画では区間エディターにも局面を反映します。
+
+採点抑制中もフォームを見返す観測・条件付き練習案を維持します。推論そのものが失敗したときは結果欄へエラー文と回復手順をtextContentで表示します。検証用の合成座標を使った動作確認であり、利用者が試した動画やiPhone実機での再現・診断精度の検証は含みません。

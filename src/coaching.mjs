@@ -1,5 +1,5 @@
-import {formatTime} from './ranges.mjs?v=5';
-import {evaluateSwing,RUBRIC} from './scoring.mjs?v=5';
+import {formatTime} from './ranges.mjs?v=6';
+import {evaluateSwing,RUBRIC} from './scoring.mjs?v=6';
 export const mid=(a,b)=>({x:(a.x+b.x)/2,y:(a.y+b.y)/2});
 export const good=(p,ids)=>ids.every(i=>p[i]&&(p[i].visibility??1)>.55);
 export function angle(a,b,c,w,h){const u=[(a.x-b.x)*w,(a.y-b.y)*h],v=[(c.x-b.x)*w,(c.y-b.y)*h];return Math.acos(Math.max(-1,Math.min(1,(u[0]*v[0]+u[1]*v[1])/(Math.hypot(...u)*Math.hypot(...v)||1))))*180/Math.PI;}
@@ -21,6 +21,11 @@ export function segmentStats(report){
 const esc=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const jump=(time,label='映像を確認')=>`<button class="secondary memo-jump" data-jump="${Number(time).toFixed(3)}">${esc(label)} ${formatTime(time)}</button>`;
 const card=(title,tone,observed,meaning,practice,recheck,time)=>`<article class="coach-card ${tone}"><h4>${title}</h4><dl><dt>観測</dt><dd>${observed}</dd><dt>見るポイント</dt><dd>${meaning}</dd><dt>修正・確認練習</dt><dd>${practice}</dd><dt>次の撮影で確認</dt><dd>${recheck}</dd></dl>${time==null?'':jump(time)}</article>`;
+function setupHTML(s){return `<div class="score-setup-action"><button class="secondary" data-review-score="${s.index}">動画を見て採点時刻を設定 · スイング${s.index+1}</button><p>構えと打球の位置を指定すると、保存済みの骨格から点数とアドバイスを更新します。再解析は不要です。</p></div>`;}
+function summaryHTML(stats,view){
+  const scored=stats.filter(s=>s.evaluation.score!==null).length;
+  return `<section class="evaluation-summary" aria-label="評価の状態"><h4>${scored?`${stats.length}スイング中 ${scored}件を採点しました`:'解析結果あり · 採点条件の確認が必要です'}</h4><p>${view==='front'?'正面動画では前傾角の点数を出せません。下に計測結果と確認練習を表示しています。':'点数がない場合も、下に計測結果と確認練習を表示しています。'}</p>${stats.map(s=>`<div class="evaluation-status"><strong>スイング${s.index+1}：${s.evaluation.score===null?'採点できない理由':s.evaluation.score+' / 100点'}</strong>${s.evaluation.score===null?`<p>${esc(s.evaluation.reason)}</p>`:''}${s.evaluation.score===null&&view==='side'?setupHTML(s):''}</div>`).join('')}</section>`;
+}
 function scoreHTML(s){
   const e=s.evaluation;
   if(e.score===null)return `<div class="swing-score pending"><span class="score-value">—<small> / 100</small></span><div><h4>角度コントロール · 採点待ち</h4><p>${esc(e.reason)}</p></div></div>`;
@@ -35,10 +40,11 @@ function scoreHTML(s){
 const researchHTML=`<details class="coach-sources"><summary>良い姿勢の考え方・参考角度</summary><p>TPIは、構えから姿勢が大きく変わることを確認項目に挙げ、姿勢を支えながら回転することを重視しています。打球前に腰がボール側へ出て上体が起きる動きも確認します。膝・肩の角度やフィニッシュまで同じ角度に固定することは、このアプリの目標にしません。</p><p>男性プロ11名の研究では、基準のボール位置で構えの体幹前傾は平均41.5±2.9°でした。これは実験集団の測定値で、全員の理想値ではありません。ボールとの距離を変えると姿勢角も変わりました。本アプリの肩・腰の中点を結ぶ2D角度とは測定方法が異なるため、41.5°に近いほど加点する採点はしません。</p><p>構えは股関節から上体を傾け、無理なく回転できる状態を鏡・後方動画で確認します。クラブ・体格・カメラ位置で見え方が変わるため、適切な絶対角の確定には指導者と同じ条件での確認が必要です。</p><p><a href="https://www.mytpi.com/improve-my-game/swing-characteristics/loss-of-posture" target="_blank" rel="noopener">TPI：Loss of Posture</a> · <a href="https://www.mytpi.com/improve-my-game/swing-characteristics/early-extension" target="_blank" rel="noopener">TPI：Early Extension</a> · <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC6243633/" target="_blank" rel="noopener">Kimほか（2018）：ボール位置と構えの角度</a></p></details>`;
 export function coachingHTML(report){
   const stats=segmentStats(report);
-  return `<div class="coach-report"><h3>スイング評価 <span class="tag">角度からの参考評価</span></h3><p>後方動画の構え〜打球で、角度の維持を評価します。各区間に1スイングと、構え・打球の時刻を指定してください。</p>${researchHTML}${stats.map(s=>{
+  return `<div class="coach-report"><h3>スイング評価 <span class="tag">角度からの参考評価</span></h3>${summaryHTML(stats,report.view)}<p>後方動画の構え〜打球で、角度の維持を評価します。各区間に1スイングと、構え・打球の時刻を指定してください。</p>${researchHTML}${stats.map(s=>{
     const {segment}=s,low=s.count<5||(s.coverage!==null&&s.coverage<.7),coverage=s.coverage===null?'検出率は未記録':`検出率 ${Math.round(s.coverage*100)}%`;
     let html=`<section class="coach-segment"><div class="coach-segment-heading"><h3>区間 ${s.index+1} · ${formatTime(segment.start)}–${formatTime(segment.end)}</h3>${jump(segment.start,'区間の開始へ')}</div><p>${s.count}フレーム検出 · ${coverage} · ${report.view==='front'?'正面':'後方'} · ${report.hand==='right'?'右':'左'}打ち</p>`;
     html+=scoreHTML(s);
+    if(report.view==='side')html+=setupHTML(s);
     if(low){
       html+=card('最優先：映像の検出状態を整える','warn',`この区間は${s.count}フレーム検出できました。${coverage}で、姿勢の変化を評価するには情報が不足しています。`,'線が体から外れている場面では、角度の大きさをフォームの課題として扱わないでください。','全身と両足が映る位置でカメラを固定します。体が隠れない明るさで1スイングだけ撮影し、区間の開始をアドレス付近に合わせます。','骨格が肩・腰・膝に重なり、トップと打球付近でも線が飛ばないことを確認してから、下の項目を見直します。',segment.start);
       return html+'</section>';

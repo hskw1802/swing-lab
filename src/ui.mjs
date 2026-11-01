@@ -19,6 +19,9 @@ export function toast(text){const element=document.querySelector('#toast');clear
 export function resultReady(){
   toast('解析データを表示しました');
   const el=document.querySelector('#results-section');
+  // A long multi-swing report may never reach an 8% intersection ratio.
+  el.querySelectorAll('.reveal').forEach(item=>item.classList.add('is-visible'));
+  document.querySelector('#feedback').classList.add('is-visible');
   el.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'start'});
   if(!matchMedia('(prefers-reduced-motion: reduce)').matches)document.querySelector('#metrics').animate([{opacity:.3,transform:'translateY(10px)'},{opacity:1,transform:'translateY(0)'}],{duration:550,easing:'cubic-bezier(.2,.8,.2,1)'});
 }
@@ -43,7 +46,7 @@ document.querySelector('#loadingClose').onclick=()=>setLoading(false);
 const reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
 if(!reducedMotion){
   document.body.classList.add('motion-ready');
-  const revealObserver=new IntersectionObserver(entries=>{for(const entry of entries){if(entry.isIntersecting){entry.target.classList.add('is-visible');revealObserver.unobserve(entry.target);}}},{threshold:.08});
+  const revealObserver=new IntersectionObserver(entries=>{for(const entry of entries){if(entry.isIntersecting){entry.target.classList.add('is-visible');revealObserver.unobserve(entry.target);}}},{threshold:0});
   document.querySelectorAll('.reveal').forEach(el=>revealObserver.observe(el));
 }
 setLoading(true,'アプリを準備しています');

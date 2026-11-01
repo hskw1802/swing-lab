@@ -1,4 +1,4 @@
-import {mid,good,angle} from './coaching.mjs?v=5';
+import {mid,good,angle} from './coaching.mjs?v=6';
 export function renderOverlay(canvas,frame,report,segment,layers,thickness=3){
   const w=report.width,h=report.height;
   if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;}
